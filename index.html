@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robotik MTsN 1 Garut</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Robotik">
+<link rel="apple-touch-icon" href="1772369884599.png">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #05071a;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-gradient {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(80,0,180,0.25) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 60%, rgba(0,60,180,0.3) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(120,0,200,0.1) 0%, transparent 70%),
+      linear-gradient(135deg, #05071a 0%, #0a0d2e 50%, #0d0520 100%);
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(100,60,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,60,255,0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .particle {
+    position: fixed; border-radius: 50%; opacity: 0;
+    animation: particleRise linear infinite; z-index: 1;
+  }
+  @keyframes particleRise {
+    0%   { transform: translateY(100vh); opacity: 0; }
+    10%  { opacity: 0.8; }
+    90%  { opacity: 0.2; }
+    100% { transform: translateY(-20px); opacity: 0; }
+  }
+  .scanline {
+    position: fixed; left: 0; right: 0; height: 2px; z-index: 200;
+    background: linear-gradient(90deg, transparent, rgba(120,60,255,0.5), rgba(0,100,255,0.5), transparent);
+    animation: scanMove 6s linear infinite;
+  }
+  @keyframes scanMove { from { top: 0; } to { top: 100vh; } }
+
+  /* ════════════════════════════
+     LOADING SCREEN
+  ════════════════════════════ */
+  #loading {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 1.2s ease;
+  }
+  #loading.hide { opacity: 0; pointer-events: none; }
+
+  .logo-wrap {
+    position: relative; width: 180px; height: 180px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+    animation: floatUp 0.9s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes floatUp {
+    from { opacity: 0; transform: translateY(50px) scale(0.85); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .logo-glow {
+    position: absolute; inset: -20px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(100,60,255,0.4) 0%, rgba(0,80,255,0.2) 40%, transparent 70%);
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%,100% { transform: scale(1); opacity: 0.8; }
+    50%     { transform: scale(1.15); opacity: 1; }
+  }
+  .ring-outer {
+    position: absolute; inset: -16px;
+    border: 2px solid transparent;
+    border-top-color: #7c3aff; border-right-color: #7c3aff;
+    border-radius: 50%; animation: spinCW 4s linear infinite;
+    box-shadow: 0 0 16px rgba(124,58,255,0.5);
+  }
+  .ring-mid {
+    position: absolute; inset: -4px;
+    border: 1.5px solid transparent;
+    border-bottom-color: #0066ff; border-left-color: #0066ff;
+    border-radius: 50%; animation: spinCCW 3s linear infinite;
+    box-shadow: 0 0 12px rgba(0,102,255,0.4);
+  }
+  .ring-dash {
+    position: absolute; inset: -28px;
+    border: 1px dashed rgba(150,80,255,0.25);
+    border-radius: 50%; animation: spinCW 10s linear infinite;
+  }
+  .corner { position: absolute; width: 16px; height: 16px; border-color: #7c3aff; border-style: solid; }
+  .corner-tl { top: -16px; left: -16px; border-width: 2px 0 0 2px; }
+  .corner-tr { top: -16px; right: -16px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: -16px; left: -16px; border-width: 0 0 2px 2px; }
+  .corner-br { bottom: -16px; right: -16px; border-width: 0 2px 2px 0; }
+  @keyframes spinCW  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes spinCCW { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+
+  .logo-img {
+    width: 150px; height: 150px; object-fit: contain;
+    position: relative; z-index: 2;
+    filter: drop-shadow(0 0 16px rgba(120,60,255,0.7)) drop-shadow(0 0 32px rgba(0,80,255,0.4));
+    animation: logoFloat 4s ease-in-out infinite;
+  }
+  @keyframes logoFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .logo-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 40px; font-weight: 900; letter-spacing: 8px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(120,60,255,0.8), 0 0 40px rgba(0,100,255,0.5);
+    animation: floatUp 0.8s 0.3s cubic-bezier(.16,1,.3,1) both;
+    margin-bottom: 10px;
+  }
+  .logo-desc {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px; font-weight: 700; letter-spacing: 2px;
+    color: rgba(220,190,255,0.95); text-align: center;
+    max-width: 480px; line-height: 1.7; text-transform: uppercase;
+    animation: floatUp 0.8s 0.5s cubic-bezier(.16,1,.3,1) both;
+    margin-bottom: 40px; padding: 0 16px;
+    text-shadow: 0 0 12px rgba(160,100,255,0.4);
+  }
+  .spinner-bars {
+    display: flex; align-items: flex-end; gap: 5px;
+    height: 44px; margin-bottom: 28px;
+    animation: floatUp 0.8s 0.6s ease both;
+  }
+  .bar { width: 4px; border-radius: 2px; animation: barAnim 1.4s ease-in-out infinite; }
+  .bar:nth-child(odd)  { background: linear-gradient(to top, #7c3aff, #b06aff); box-shadow: 0 0 8px rgba(124,58,255,0.6); }
+  .bar:nth-child(even) { background: linear-gradient(to top, #0055ff, #00aaff); box-shadow: 0 0 8px rgba(0,85,255,0.6); }
+  .bar:nth-child(1){animation-delay:0s}   .bar:nth-child(2){animation-delay:.1s}
+  .bar:nth-child(3){animation-delay:.2s}  .bar:nth-child(4){animation-delay:.3s}
+  .bar:nth-child(5){animation-delay:.4s}  .bar:nth-child(6){animation-delay:.5s}
+  .bar:nth-child(7){animation-delay:.4s}  .bar:nth-child(8){animation-delay:.3s}
+  .bar:nth-child(9){animation-delay:.2s}  .bar:nth-child(10){animation-delay:.1s}
+  .bar:nth-child(11){animation-delay:0s}  .bar:nth-child(12){animation-delay:.1s}
+  @keyframes barAnim { 0%,100%{height:6px;opacity:.3} 50%{height:40px;opacity:1} }
+
+  .status-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; animation:floatUp .8s .7s ease both; }
+  .status-text {
+    font-family:'Orbitron',monospace; font-size:11px; letter-spacing:3px; color:#7c3aff;
+    text-transform:uppercase; transition:opacity .3s; min-height:16px;
+    text-shadow:0 0 10px rgba(124,58,255,.5);
+  }
+  .dots{display:flex;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;animation:dotPulse 1.4s ease-in-out infinite}
+  .dot:nth-child(1){background:#7c3aff;box-shadow:0 0 8px #7c3aff;animation-delay:0s}
+  .dot:nth-child(2){background:#0066ff;box-shadow:0 0 8px #0066ff;animation-delay:.2s}
+  .dot:nth-child(3){background:#7c3aff;box-shadow:0 0 8px #7c3aff;animation-delay:.4s}
+  @keyframes dotPulse{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1.3);opacity:1}}
+
+  /* ════════════════════════════
+     INTRO / PENGENALAN
+  ════════════════════════════ */
+  #intro {
+    position: fixed; inset: 0; z-index: 80;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    overflow-y: auto;
+  }
+  #intro.show { opacity: 1; pointer-events: all; }
+
+  .intro-container {
+    max-width: 860px; width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    transform: translateY(30px);
+    transition: transform 0.8s ease;
+  }
+  #intro.show .intro-container { transform: translateY(0); }
+
+  .intro-logo-bar {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .intro-logo-bar img {
+    width: 56px; height: 56px; object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(120,60,255,0.7));
+  }
+  .intro-logo-bar .t1 {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff;
+  }
+  .intro-logo-bar .t1 span { color: #7c3aff; }
+  .intro-logo-bar .t2 {
+    font-size: 12px; letter-spacing: 3px;
+    color: rgba(160,130,255,0.6); text-transform: uppercase;
+  }
+
+  .intro-headline {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(20px, 3.5vw, 34px); font-weight: 900;
+    text-align: center; line-height: 1.3; color: #fff;
+    margin-bottom: 14px;
+    text-shadow: 0 0 30px rgba(100,60,255,0.4);
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .intro-headline span {
+    background: linear-gradient(90deg, #7c3aff, #0066ff, #00aaff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .intro-sub {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.5px;
+    color: rgba(180,155,255,0.8); text-align: center; max-width: 560px;
+    line-height: 1.7; margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .intro-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; width: 100%; margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+  .intro-card {
+    background: rgba(20,10,50,0.7);
+    border: 1px solid rgba(100,60,255,0.2);
+    padding: 22px 18px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; text-align: center;
+    transition: border-color 0.3s, transform 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .intro-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #7c3aff, #0066ff);
+    transform: scaleX(0); transition: transform 0.3s; transform-origin: left;
+  }
+  .intro-card:hover { border-color: rgba(124,58,255,0.5); transform: translateY(-4px); }
+  .intro-card:hover::before { transform: scaleX(1); }
+  .intro-card-icon {
+    width: 48px; height: 48px;
+    background: rgba(100,40,255,0.15); border: 1px solid rgba(124,58,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; border-radius: 4px;
+  }
+  .intro-card-title {
+    font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; color: #fff; text-transform: uppercase;
+  }
+  .intro-card-desc { font-size: 13px; color: rgba(170,150,220,0.75); line-height: 1.6; }
+
+  .intro-stats {
+    display: flex; gap: 0; width: 100%;
+    border: 1px solid rgba(100,60,255,0.2);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+  .intro-stat {
+    flex: 1; padding: 18px 12px; text-align: center;
+    border-right: 1px solid rgba(100,60,255,0.2);
+  }
+  .intro-stat:last-child { border-right: none; }
+  .intro-stat-num {
+    font-family: 'Orbitron', monospace; font-size: 26px; font-weight: 900;
+    background: linear-gradient(90deg, #7c3aff, #0066ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: block; margin-bottom: 4px;
+  }
+  .intro-stat-label { font-size: 11px; color: rgba(160,140,220,0.6); letter-spacing: 1px; text-transform: uppercase; }
+
+  .btn-lanjutkan {
+    padding: 16px 60px;
+    background: linear-gradient(90deg, #7c3aff, #0055ff);
+    color: #fff; font-family: 'Orbitron', monospace;
+    font-size: 14px; font-weight: 700; letter-spacing: 3px;
+    border: none; cursor: pointer; text-transform: uppercase;
+    clip-path: polygon(14px 0%, 100% 0%, calc(100% - 14px) 100%, 0% 100%);
+    transition: all 0.25s; position: relative; overflow: hidden;
+    animation: fadeUp 0.6s 0.6s ease both;
+    box-shadow: 0 0 32px rgba(100,40,255,0.4);
+  }
+  .btn-lanjutkan::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #0055ff, #7c3aff);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .btn-lanjutkan:hover::before { opacity: 1; }
+  .btn-lanjutkan:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(100,40,255,0.6); }
+  .btn-lanjutkan span { position: relative; z-index: 1; }
+
+  .btn-lanjutkan-hint {
+    font-size: 12px; letter-spacing: 2px; color: rgba(140,110,220,0.45);
+    margin-top: 12px; text-transform: uppercase;
+    animation: fadeUp 0.6s 0.7s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ════════════════════════════
+     AUTH SCREEN
+  ════════════════════════════ */
+  #auth {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease; overflow-y: auto;
+  }
+  #auth.show { opacity: 1; pointer-events: all; }
+
+  .auth-container {
+    display: flex; width: 100%; max-width: 480px; min-height: 580px;
+    border: 1px solid rgba(124,58,255,0.3); overflow: hidden; position: relative;
+    box-shadow: 0 0 60px rgba(80,20,200,0.3), 0 0 120px rgba(0,50,200,0.15);
+    transform: translateY(30px); transition: transform 0.8s ease;
+  }
+  #auth.show .auth-container { transform: translateY(0); }
+
+  .auth-left {
+    flex: 1; min-width: 360px;
+    background: linear-gradient(135deg, rgba(10,5,40,0.95) 0%, rgba(5,10,35,0.95) 100%);
+    padding: 48px 48px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+    border-right: 1px solid rgba(124,58,255,0.2);
+  }
+  .auth-left::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(100,60,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,60,255,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .auth-left::after {
+    content: ''; position: absolute; bottom: -60px; left: -60px;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(100,40,255,0.2), transparent 70%);
+    pointer-events: none;
+  }
+  .auth-left-logo {
+    font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: #fff;
+    position: relative; z-index: 1; display: flex; align-items: center; gap: 10px;
+  }
+  .auth-left-logo img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(120,60,255,0.6)); }
+  .auth-left-logo span { color: #7c3aff; }
+  .auth-left-content { position: relative; z-index: 1; }
+  .auth-left-content h2 { font-size: 30px; font-weight: 800; line-height: 1.2; margin-bottom: 14px; }
+  .auth-left-content h2 span {
+    background: linear-gradient(90deg, #7c3aff, #0066ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .auth-left-content p { font-size: 14px; color: rgba(180,160,255,0.7); line-height: 1.7; }
+  .auth-badges { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; }
+  .auth-badge { display: flex; align-items: center; gap: 12px; font-size: 14px; color: rgba(200,180,255,0.85); }
+  .badge-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border: 1px solid rgba(124,58,255,0.3); background: rgba(100,40,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+
+  .auth-right {
+    width: 100%; background: rgba(8,6,28,0.97);
+    padding: 52px 48px; display: flex; flex-direction: column; position: relative;
+  }
+
+  /* Back button */
+  .btn-back {
+    position: absolute; top: 14px; left: 14px;
+    font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 2px;
+    color: rgba(160,130,255,0.5); background: transparent;
+    border: 1px solid rgba(100,60,255,0.2); padding: 7px 14px;
+    cursor: pointer; text-transform: uppercase; transition: all 0.2s; z-index: 10;
+  }
+  .btn-back:hover { color: #fff; border-color: rgba(124,58,255,0.5); background: rgba(100,40,255,0.1); }
+
+  .auth-tabs {
+    display: flex; border: 1px solid rgba(124,58,255,0.3);
+    margin-bottom: 28px; overflow: hidden;
+  }
+  .auth-tab {
+    flex: 1; padding: 12px; background: transparent; border: none;
+    font-family: 'Orbitron', monospace; font-size: 11px; letter-spacing: 2px;
+    color: rgba(180,140,255,0.5); cursor: pointer; text-transform: uppercase; transition: all 0.25s;
+  }
+  .auth-tab.active { background: linear-gradient(90deg, #7c3aff, #0055ff); color: #fff; font-weight: 700; }
+  .auth-tab:hover:not(.active) { background: rgba(100,40,255,0.1); color: rgba(200,170,255,0.8); }
+
+  .form-panel { display: none; flex-direction: column; gap: 14px; flex: 1; }
+  .form-panel.active { display: flex; }
+  .form-title { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #fff; margin-bottom: 2px; }
+  .form-subtitle { font-size: 13px; color: rgba(160,130,255,0.7); margin-bottom: 6px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; color: rgba(160,130,255,0.6); text-transform: uppercase; }
+  .form-input {
+    background: rgba(20,10,50,0.8); border: 1px solid rgba(100,60,255,0.25);
+    color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+    padding: 11px 16px; outline: none; width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus { border-color: #7c3aff; box-shadow: 0 0 0 3px rgba(124,58,255,0.12); }
+  .form-input::placeholder { color: rgba(120,100,180,0.4); }
+  .btn-submit {
+    margin-top: 4px; padding: 13px;
+    background: linear-gradient(90deg, #7c3aff, #0055ff); color: #fff;
+    font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    border: none; cursor: pointer; text-transform: uppercase;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: all 0.25s; position: relative; overflow: hidden;
+  }
+  .btn-submit::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #0055ff, #7c3aff); opacity: 0; transition: opacity 0.3s; }
+  .btn-submit:hover::before { opacity: 1; }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(100,40,255,0.4); }
+  .btn-submit span { position: relative; z-index: 1; }
+  .form-divider {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Orbitron', monospace; font-size: 9px;
+    color: rgba(120,90,200,0.5); letter-spacing: 2px;
+  }
+  .form-divider::before, .form-divider::after { content: ''; flex: 1; height: 1px; background: rgba(100,60,255,0.2); }
+  .btn-google {
+    padding: 11px; background: transparent; border: 1px solid rgba(100,60,255,0.25);
+    color: rgba(200,180,255,0.8); font-family: 'Rajdhani', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; letter-spacing: 1px;
+  }
+  .btn-google:hover { border-color: rgba(124,58,255,0.5); background: rgba(100,40,255,0.1); color: #fff; }
+  .form-footer { font-family: 'Rajdhani', sans-serif; font-size: 13px; color: rgba(150,120,220,0.6); text-align: center; margin-top: auto; padding-top: 12px; }
+  .form-footer a { color: #7c3aff; cursor: pointer; text-decoration: none; font-weight: 700; transition: color 0.2s; }
+  .form-footer a:hover { color: #0066ff; }
+
+  .success-overlay {
+    display: none; position: absolute; inset: 0; z-index: 50;
+    background: rgba(8,6,28,0.97);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; text-align: center; padding: 40px;
+  }
+  .success-overlay.show { display: flex; }
+  .success-icon {
+    width: 70px; height: 70px; border: 2px solid #7c3aff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; color: #7c3aff;
+    box-shadow: 0 0 24px rgba(124,58,255,0.5);
+    animation: popIn 0.5s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .success-title { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #fff; }
+  .success-sub { font-size: 14px; color: rgba(160,130,255,0.7); }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)}
+  }
+  .shake { animation: shake 0.4s ease; }
+</style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+
+<!-- MUSIK -->
+<audio id="bgMusic" loop autoplay muted>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Tombol musik pojok kanan bawah -->
+<button id="musicBtn" onclick="toggleMusic()" style="
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: rgba(10,5,40,0.85); border: 1px solid rgba(124,58,255,0.4);
+  color: #fff; padding: 10px 18px; cursor: pointer;
+  font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; transition: all 0.2s;
+  box-shadow: 0 0 16px rgba(124,58,255,0.2);
+  backdrop-filter: blur(8px);
+">🔊 MUSIK</button>
+
+<!-- ════ LOADING ════ -->
+<div id="loading">
+  <div class="logo-wrap">
+    <div class="logo-glow"></div>
+    <div class="ring-dash"></div>
+    <div class="ring-outer"></div>
+    <div class="ring-mid"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <img class="logo-img" src="1772369884599.png" alt="Robotik Logo">
+  </div>
+  <div class="logo-title">ROBOTIK</div>
+  <div class="logo-desc">Eskul MTsN 1 Garut Yang Mengajarkan<br>Siswa Tentang Ilmu Robot / AI</div>
+  <div class="spinner-bars">
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  </div>
+  <div class="status-wrap">
+    <div class="status-text" id="statusText">Menginisialisasi sistem...</div>
+    <div class="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ INTRO / PENGENALAN ════ -->
+<div id="intro">
+  <div class="intro-container">
+
+    <div class="intro-logo-bar">
+      <img src="1772369884599.png" alt="Logo Robotik">
+      <div>
+        <div class="t1"><span>ROBO</span>TIK</div>
+        <div class="t2">MTsN 1 Garut</div>
+      </div>
+    </div>
+
+    <div class="intro-headline">
+      Selamat Datang di<br>
+      <span>Eskul Robotik MTsN 1 Garut</span>
+    </div>
+
+    <p class="intro-sub">
+      Tempat belajar, berkreasi, dan berinovasi dalam dunia Robotika dan Kecerdasan Buatan.
+      Bergabunglah bersama kami dan wujudkan ide-idemu menjadi kenyataan!
+    </p>
+
+    <div class="intro-cards">
+      <div class="intro-card">
+        <div class="intro-card-icon">🤖</div>
+        <div class="intro-card-title">Robotika</div>
+        <div class="intro-card-desc">Belajar merakit dan memprogram robot menggunakan Arduino dari dasar hingga mahir.</div>
+      </div>
+      <div class="intro-card">
+        <div class="intro-card-icon">🧠</div>
+        <div class="intro-card-title">Kecerdasan Buatan</div>
+        <div class="intro-card-desc">Pengenalan konsep AI dan machine learning serta penerapannya dalam kehidupan nyata.</div>
+      </div>
+      <div class="intro-card">
+        <div class="intro-card-icon">🏆</div>
+        <div class="intro-card-title">Kompetisi</div>
+        <div class="intro-card-desc">Ikut lomba robotika tingkat daerah, nasional, hingga internasional bersama tim.</div>
+      </div>
+    </div>
+
+    <div class="intro-stats">
+      <div class="intro-stat">
+        <span class="intro-stat-num">50+</span>
+        <span class="intro-stat-label">Anggota Aktif</span>
+      </div>
+      <div class="intro-stat">
+        <span class="intro-stat-num">12+</span>
+        <span class="intro-stat-label">Prestasi</span>
+      </div>
+      <div class="intro-stat">
+        <span class="intro-stat-num">5+</span>
+        <span class="intro-stat-label">Tahun Berdiri</span>
+      </div>
+      <div class="intro-stat">
+        <span class="intro-stat-num">20+</span>
+        <span class="intro-stat-label">Proyek Robot</span>
+      </div>
+    </div>
+
+    <button class="btn-lanjutkan" onclick="showAuth()">
+      <span>Lanjutkan &rarr;</span>
+    </button>
+    <div class="btn-lanjutkan-hint">Klik untuk masuk atau daftar akun</div>
+
+  </div>
+</div>
+
+<!-- ════ AUTH ════ -->
+<div id="auth">
+  <div class="auth-container">
+
+    <button class="btn-back" onclick="showIntro()">← Kembali</button>
+
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-icon">✓</div>
+      <div class="success-title" id="successTitle">Berhasil!</div>
+      <div class="success-sub" id="successSub">Mengalihkan...</div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="auth-right">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:28px;">
+        <img src="1772369884599.png" alt="Logo" style="width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(120,60,255,0.7))">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:4px;color:#fff;text-align:center">
+          <span style="color:#7c3aff">ROBO</span>TIK
+        </div>
+        <div style="font-size:11px;letter-spacing:3px;color:rgba(160,130,255,0.5);text-transform:uppercase;">MTsN 1 Garut</div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab" onclick="switchTab('register')">Daftar</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="form-panel active" id="loginForm">
+        <div>
+          <div class="form-title">MASUK</div>
+          <div class="form-subtitle">Login ke akun Robotik kamu</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email / Username</label>
+          <input type="text" class="form-input" placeholder="email atau username" id="loginUser">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="••••••••" id="loginPass">
+        </div>
+        <button class="btn-submit" onclick="handleLogin()"><span>Masuk →</span></button>
+        <div class="form-divider">atau</div>
+        <button class="btn-google">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Lanjutkan dengan Google
+        </button>
+        <div class="form-footer">Belum punya akun? <a onclick="switchTab('register')">Daftar sekarang</a></div>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="form-panel" id="registerForm">
+        <div>
+          <div class="form-title">DAFTAR</div>
+          <div class="form-subtitle">Buat akun baru Robotik</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <input type="text" class="form-input" placeholder="Nama kamu" id="regName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" placeholder="email@mtsn1garut.sch.id" id="regEmail">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="Min. 8 karakter" id="regPass">
+        </div>
+        <button class="btn-submit" onclick="handleRegister()"><span>Daftar Sekarang →</span></button>
+        <div class="form-divider">atau</div>
+        <button class="btn-google">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Lanjutkan dengan Google
+        </button>
+        <div class="form-footer">Sudah punya akun? <a onclick="switchTab('login')">Login di sini</a></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Particles
+  const colors = ['#7c3aff','#0066ff','#b06aff','#00aaff','#9d4fff'];
+  for (let i = 0; i < 35; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    const s = Math.random() * 3 + 1;
+    p.style.width = p.style.height = s + 'px';
+    p.style.animationDuration = (Math.random() * 10 + 7) + 's';
+    p.style.animationDelay = (Math.random() * 8) + 's';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.boxShadow = `0 0 6px ${p.style.background}`;
+    document.body.appendChild(p);
+  }
+
+  // Loading messages
+  const messages = [
+    'Menginisialisasi sistem...',
+    'Memuat modul robotika...',
+    'Mengkalibrasi sensor AI...',
+    'Menghubungkan jaringan...',
+    'Memverifikasi protokol...',
+    'Menyinkronkan database...',
+    'Sistem siap digunakan!',
+  ];
+  const statusEl = document.getElementById('statusText');
+  let idx = 0;
+  const interval = setInterval(() => {
+    idx++;
+    if (idx < messages.length) {
+      statusEl.style.opacity = '0';
+      setTimeout(() => { statusEl.textContent = messages[idx]; statusEl.style.opacity = '1'; }, 250);
+    }
+    if (idx >= messages.length - 1) {
+      clearInterval(interval);
+      setTimeout(finishLoading, 1200);
+    }
+  }, 900);
+
+  // ── Loading → Intro
+  function finishLoading() {
+    const loading = document.getElementById('loading');
+    loading.classList.add('hide');
+    setTimeout(() => {
+      loading.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      document.getElementById('intro').classList.add('show');
+    }, 1200);
+  }
+
+  // ── Intro → Auth
+  function showAuth() {
+    const intro = document.getElementById('intro');
+    intro.style.opacity = '0';
+    intro.style.transition = 'opacity 0.5s ease';
+    setTimeout(() => {
+      intro.style.display = 'none';
+      document.getElementById('auth').classList.add('show');
+    }, 500);
+  }
+
+  // ── Auth → Intro (tombol kembali)
+  function showIntro() {
+    const auth = document.getElementById('auth');
+    auth.classList.remove('show');
+    setTimeout(() => {
+      const intro = document.getElementById('intro');
+      intro.style.display = 'flex';
+      intro.style.opacity = '0';
+      intro.style.transition = 'none';
+      setTimeout(() => {
+        intro.style.transition = 'opacity 0.5s ease';
+        intro.style.opacity = '1';
+        intro.classList.add('show');
+      }, 50);
+    }, 400);
+  }
+
+  // ── Tabs
+  function switchTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+    });
+    document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+    document.getElementById('registerForm').classList.toggle('active', tab === 'register');
+  }
+
+  // ── Login
+  function handleLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!user || !pass) {
+      document.getElementById('loginForm').classList.add('shake');
+      setTimeout(() => document.getElementById('loginForm').classList.remove('shake'), 400);
+      return;
+    }
+    showSuccess('Login Berhasil! 👋', 'Selamat datang kembali di Robotik MTsN 1 Garut');
+  }
+
+  // ── Register
+  function handleRegister() {
+    const name  = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass  = document.getElementById('regPass').value;
+    if (!name || !email || !pass || pass.length < 8) {
+      document.getElementById('registerForm').classList.add('shake');
+      setTimeout(() => document.getElementById('registerForm').classList.remove('shake'), 400);
+      return;
+    }
+    showSuccess('Akun Berhasil Dibuat! 🎉', 'Selamat bergabung di Eskul Robotik MTsN 1 Garut!');
+  }
+
+  function showSuccess(title, sub) {
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successSub').textContent = sub;
+    document.getElementById('successOverlay').classList.add('show');
+  }
+
+  // ── MUSIK AUTOPLAY
+  const music = document.getElementById('bgMusic');
+  const musicBtn = document.getElementById('musicBtn');
+  let musicStarted = false;
+
+  function startMusic() {
+    if (musicStarted) return;
+    music.volume = 0;
+    music.play().then(() => {
+      musicStarted = true;
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol += 0.05;
+        if (vol >= 0.4) { vol = 0.4; clearInterval(fadeIn); }
+        music.volume = vol;
+      }, 150);
+    }).catch(() => {});
+  }
+
+  // Coba autoplay langsung
+  window.addEventListener('load', () => {
+    music.muted = false;
+    music.volume = 0;
+    music.play().then(() => {
+      musicStarted = true;
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol += 0.03;
+        if (vol >= 0.4) { vol = 0.4; clearInterval(fadeIn); }
+        music.volume = vol;
+      }, 200);
+    }).catch(() => {
+      // Kalau diblokir, coba lagi saat interaksi pertama
+      ['click','touchstart','keydown','scroll'].forEach(evt => {
+        document.addEventListener(evt, startMusic, { once: true });
+      });
+    });
+  });
+
+  function toggleMusic() {
+    if (music.paused) {
+      music.play();
+      musicBtn.textContent = '🔊 MUSIK';
+      musicBtn.style.borderColor = 'rgba(124,58,255,0.4)';
+    } else {
+      music.pause();
+      musicBtn.textContent = '🔇 MUTE';
+      musicBtn.style.borderColor = 'rgba(255,100,100,0.4)';
+    }
+  }
+  // ── SERVICE WORKER (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('SW registered'))
+        .catch(() => console.log('SW failed'));
+    });
+  }
+</script>
+</body>
+</html>
